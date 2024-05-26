@@ -13,14 +13,14 @@ type MobiFitnessApi struct {
 	client *resty.Client
 }
 
-func NewMobiFitnessApi(conf *config.MobiFitness) *MobiFitnessApi {
+func NewMobiFitnessApi(conf config.MobiFitness) *MobiFitnessApi {
 	client := resty.New()
 	client.SetAuthToken(conf.AccessToken)
 	client.SetBaseURL(conf.ApiURL)
 	return &MobiFitnessApi{client: client}
 }
 
-func (c *MobiFitnessApi) GetClubsList() ([]*models.ClubInfoResponse, error) {
+func (c *MobiFitnessApi) GetClubsList() ([]*models.ClubListResponse, error) {
 	resp, err := c.client.R().
 		SetHeader("Accept", "application/json").
 		Get("/api/v8/franchise/clubs.json")
@@ -31,7 +31,7 @@ func (c *MobiFitnessApi) GetClubsList() ([]*models.ClubInfoResponse, error) {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
 	}
 
-	var list []*models.ClubInfoResponse
+	var list []*models.ClubListResponse
 	if err := jsoniter.Unmarshal(resp.Body(), &list); err != nil {
 		return nil, fmt.Errorf("unmarshal error: %w", err)
 	}

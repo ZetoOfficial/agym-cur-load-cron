@@ -1,4 +1,4 @@
-package sqlite
+package postgres
 
 import (
 	"context"
@@ -8,15 +8,15 @@ import (
 	"time"
 
 	"github.com/ZetoOfficial/agym-cur-load-cron/internal/models"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 type Storage struct {
 	db *sql.DB
 }
 
-func NewStorage(dbPath string) (*Storage, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+func NewStorage(connStr string) (*Storage, error) {
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -25,7 +25,6 @@ func NewStorage(dbPath string) (*Storage, error) {
 		return nil, fmt.Errorf("failed to initialize tables: %w", err)
 	}
 
-	logrus.Printf("database opened at %s", dbPath)
 	return &Storage{db: db}, nil
 }
 
@@ -57,7 +56,7 @@ func (s *Storage) SaveClubLoad(ctx context.Context, load *models.ClubInfoRespons
 	loc, _ := time.LoadLocation("Asia/Yekaterinburg")
 	utcTime := time.Now().In(loc)
 
-	query := `INSERT INTO club_loads (club_id, club_title, load, created_at) VALUES (?, ?, ?, ?)`
+	query := `INSERT INTO club_loads (club_id, club_title, load, created_at) VALUES ($1, $2, $3, $4)`
 	stmt, err := s.db.PrepareContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)

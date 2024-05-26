@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ZetoOfficial/agym-cur-load-cron/internal/models"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
+	"time"
 )
 
 type MobiFitnessApiClient interface {
-	GetClubsList() ([]*models.ClubInfoResponse, error)
+	GetClubsList() ([]*models.ClubListResponse, error)
 	GetClubInfo(clubID int) (*models.ClubInfoResponse, error)
 }
 
@@ -26,12 +28,32 @@ func NewClub(mobiFitnessApiClient MobiFitnessApiClient, storage Storage) *Club {
 	return &Club{mobiFitnessApiClient: mobiFitnessApiClient, storage: storage}
 }
 
-func (s *Club) SaveClubsLoad(ctx context.Context) error {
+func (s *Club) StartCron(ctx context.Context) error {
 	clubs, err := s.mobiFitnessApiClient.GetClubsList()
 	if err != nil {
 		return fmt.Errorf("failed to get clubs list: %w", err)
 	}
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logrus.Print("Shutting down gracefully...")
+			return nil
+		case <-ticker.C:
+			if err := s.SaveClubsLoad(ctx, clubs); err != nil {
+				logrus.Errorf("error saving clubs load: %v", err)
+				time.Sleep(15 * time.Second)
+			} else {
+				logrus.Print("Successfully saved clubs load")
+			}
+		}
+	}
+}
+
+func (s *Club) SaveClubsLoad(ctx context.Context, clubs []*models.ClubListResponse) error {
 	g, ctx := errgroup.WithContext(ctx)
 	for _, club := range clubs {
 		club := club
