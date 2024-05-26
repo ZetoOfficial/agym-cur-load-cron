@@ -1,6 +1,18 @@
 version: '3.8'
 
 services:
+  agym-cur-load-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agym-cur-load-cron
+    volumes:
+      - ./config/config.yaml:/root/config/config.yaml
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -13,11 +25,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - postgres_network
+      - app-network
 
 volumes:
   postgres_data:
 
 networks:
-  postgres_network:
+  app-network:
     driver: bridge

@@ -1,19 +1,7 @@
-FROM golang:1.22.3 AS build
-
+FROM golang:1.22.3-alpine
 WORKDIR /app
-
-COPY go.mod .
-COPY go.sum .
-
+COPY go.mod go.sum ./
 RUN go mod download
-
 COPY . .
-
 RUN go build -o main .
-
-FROM alpine:latest
-WORKDIR /root/
-COPY --from=build /app/main .
-COPY config/config.yaml /root/config/config.yaml
-
 CMD ["./main"]
